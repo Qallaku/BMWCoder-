@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">BmwCoder</string>
+    <string name="btn_devices">Show paired adapters</string>
+    <string name="hint_start">Tap the button to see Bluetooth adapters.</string>
+    <string name="msg_allow_bt">Allow Bluetooth, then tap the button again.</string>
+    <string name="msg_bt_off">Bluetooth is off. Turn it on and try again.</string>
+    <string name="msg_no_devices">No paired devices.</string>
+</resources>
