@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">BmwCoder</string>
+    <string name="btn_devices">Shfaq adapterët e çiftuar</string>
+    <string name="hint_start">Shtyp butonin për të parë adapterët Bluetooth.</string>
+    <string name="msg_allow_bt">Lejo Bluetooth, pastaj shtyp përsëri butonin.</string>
+    <string name="msg_bt_off">Bluetooth është i fikur. Ndize dhe provo përsëri.</string>
+    <string name="msg_no_devices">Asnjë pajisje e çiftuar.</string>
+</resources>
