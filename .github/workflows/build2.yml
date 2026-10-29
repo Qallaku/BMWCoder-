@@ -1,0 +1,26 @@
+name: Build APK 2
+on:
+  push:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.9
+      - name: Build
+        run: |
+          gradle assembleDebug --console=plain > build.log 2>&1 || {
+            grep -E "^e: |What went wrong|error:|Error:" -A2 build.log | head -20 | while IFS= read -r l; do echo "::error::$l"; done
+            exit 1
+          }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BmwCoder-apk
+          path: app/build/outputs/apk/debug/*.apk
