@@ -1,35 +1,23 @@
 package com.bmwcoder
 
 import android.app.Activity
-import android.app.LocaleManager
+import android.content.Context
 import android.content.Intent
-import android.os.Build
 import android.os.Bundle
-import android.os.LocaleList
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
 
 class MenuActivity : Activity() {
-    private fun isEn() = resources.configuration.locales[0].language == "en"
-    private fun t(sq: String, en: String) = if (isEn()) en else sq
-
-    private fun setLang(tag: String) {
-        if (Build.VERSION.SDK_INT >= 33) {
-            getSystemService(LocaleManager::class.java).applicationLocales =
-                LocaleList.forLanguageTags(tag)
-        }
+    override fun attachBaseContext(base: Context) {
+        super.attachBaseContext(LocaleHelper.wrap(base))
     }
+
+    private fun isEn() = LocaleHelper.get(this) == "en"
+    private fun t(sq: String, en: String) = if (isEn()) en else sq
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        if (Build.VERSION.SDK_INT >= 33) {
-            val lm = getSystemService(LocaleManager::class.java)
-            if (lm.applicationLocales.isEmpty) {
-                lm.applicationLocales = LocaleList.forLanguageTags("sq")
-            }
-        }
 
         val root = LinearLayout(this)
         root.orientation = LinearLayout.VERTICAL
@@ -67,12 +55,18 @@ class MenuActivity : Activity() {
 
         val sq = Button(this)
         sq.text = "Shqip"
-        sq.setOnClickListener { setLang("sq") }
+        sq.setOnClickListener {
+            LocaleHelper.set(this, "sq")
+            recreate()
+        }
         row.addView(sq, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
 
         val en = Button(this)
         en.text = "English"
-        en.setOnClickListener { setLang("en") }
+        en.setOnClickListener {
+            LocaleHelper.set(this, "en")
+            recreate()
+        }
         row.addView(en, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
 
         root.addView(row)
