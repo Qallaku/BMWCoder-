@@ -74,11 +74,12 @@ class ModulesActivity : Activity() {    override fun attachBaseContext(base: and
         val list = ListView(this)
         val adapter = EcuAdapter()
         list.adapter = adapter
-        list.setOnItemClickListener { _, _, pos, _ ->
-            Toast.makeText(this,
-                if (isEn) "Demo mode: no car connected" else "Modaliteti demo: pa makinë",
-                Toast.LENGTH_SHORT).show()
-        }
+
+            list.setOnItemClickListener { _, _, pos, _ ->
+            val i = android.content.Intent(this, ModuleDetailActivity::class.java)
+            i.putExtra("name", shown[pos].name)
+            startActivity(i)
+        }    }
         root.addView(list, LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
 
