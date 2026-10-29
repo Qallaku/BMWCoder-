@@ -26,7 +26,10 @@ class MenuActivity : Activity() {
         val title = TextView(this)
         title.text = "BmwCoder"
         title.textSize = 30f
-        root.addView(title)
+        root.addView(        val b3 = Button(this)
+        b3.text = "Backup"
+        b3.setOnClickListener { startActivity(Intent(this, BackupActivity::class.java)) }
+        root.addView(b3))
 
         val sub = TextView(this)
         sub.text = t("Zgjidh një opsion", "Choose an option")
