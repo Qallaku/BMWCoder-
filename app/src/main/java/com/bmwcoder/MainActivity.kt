@@ -20,7 +20,9 @@ import java.util.Locale
 import java.util.UUID
 
 @SuppressLint("MissingPermission")
-class MainActivity : Activity() {
+class MainActivity : Activity() {    override fun attachBaseContext(base: android.content.Context) {
+        super.attachBaseContext(LocaleHelper.wrap(base))
+}
     private lateinit var info: TextView
     private lateinit var list: ListView
     private var devices: List<BluetoothDevice> = emptyList()
