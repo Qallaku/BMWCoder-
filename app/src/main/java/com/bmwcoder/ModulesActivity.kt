@@ -15,7 +15,9 @@ import android.widget.TextView
 import android.widget.Toast
 import java.util.Locale
 
-class ModulesActivity : Activity() {
+class ModulesActivity : Activity() {    override fun attachBaseContext(base: android.content.Context) {
+        super.attachBaseContext(LocaleHelper.wrap(base))
+}
     data class Ecu(val name: String, val descSq: String, val descEn: String)
 
     private val all = listOf(
