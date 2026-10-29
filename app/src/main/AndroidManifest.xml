@@ -16,5 +16,5 @@
         <activity android:name=".MainActivity" android:exported="false" />
         <activity android:name=".ModulesActivity" android:exported="false" />
         <activity android:name=".BackupActivity" android:exported="false" />
-    </application>
+    </application>        <activity android:name=".ModuleDetailActivity" android:exported="false" />
 </manifest>
