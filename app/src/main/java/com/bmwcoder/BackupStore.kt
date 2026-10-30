@@ -58,9 +58,11 @@ object BackupStore {
         )
         return Item(f, module, now, first, data)
     }
-
     fun delete(item: Item): Boolean {
         if (item.original) return false
         return item.file.delete()
+    }
+}
+    
     }
 }
