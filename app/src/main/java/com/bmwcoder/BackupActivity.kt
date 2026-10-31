@@ -16,6 +16,7 @@ import java.util.Date
 import java.util.Locale
 
 class BackupActivity : Activity() {
+
     override fun attachBaseContext(base: Context) {
         super.attachBaseContext(LocaleHelper.wrap(base))
     }
@@ -25,9 +26,11 @@ class BackupActivity : Activity() {
 
     private lateinit var title: TextView
     private lateinit var list: ListView
+
     private var current: String? = null
     private var mods: List<String> = emptyList()
     private var items: List<BackupStore.Item> = emptyList()
+
     private val demoMods = listOf("Front Electronic Module", "Headunit")
 
     private fun fmt(ms: Long): String =
@@ -35,6 +38,7 @@ class BackupActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         val root = LinearLayout(this)
         root.orientation = LinearLayout.VERTICAL
         root.setPadding(48, 96, 48, 24)
@@ -46,8 +50,8 @@ class BackupActivity : Activity() {
         val create = Button(this)
         create.text = t("Krijo backup provë", "Create test backup")
         create.setOnClickListener {
-            val m = current ?: demoMods[((System.currentTimeMillis() / 1000) % 2).toInt()]
-            BackupStore.save(this, m, "DEMO-" + System.currentTimeMillis() % 100000)
+            val module = current ?: demoMods[(System.currentTimeMillis() / 1000L % demoMods.size).toInt()]
+            BackupStore.save(this, module, "DEMO-" + (System.currentTimeMillis() % 100000))
             refresh()
         }
         root.addView(create)
@@ -65,11 +69,20 @@ class BackupActivity : Activity() {
                     refresh()
                 }
             } else {
-                if (pos < items.size) show(items[pos])
+                if (pos < items.size) {
+                    show(items[pos])
+                }
             }
         }
-        root.addView(list, LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
+        root.addView(
+            list,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                0,
+                1f
+            )
+        )
+
         setContentView(root)
         refresh()
     }
@@ -93,21 +106,26 @@ class BackupActivity : Activity() {
 
     private fun show(it: BackupStore.Item) {
         val msg = it.module + "\n" + fmt(it.time) + "\n\n" + it.data
+
         AlertDialog.Builder(this)
             .setTitle(if (it.original) "★ " + t("Origjinal", "Original") else fmt(it.time))
             .setMessage(msg)
             .setPositiveButton(t("Rikthe", "Restore")) { _, _ ->
-                Toast.makeText(this,
-                    t("Demo: rikthimi punon me makinën", "Demo: restore works with the car"),
-                    Toast.LENGTH_LONG).show()
+                Toast.makeText(
+                    this,
+                    t("Rikthimi nuk është akoma i implementuar", "Restore is not implemented yet"),
+                    Toast.LENGTH_LONG
+                ).show()
             }
             .setNegativeButton(t("Fshi", "Delete")) { _, _ ->
                 if (BackupStore.delete(it)) {
                     refresh()
                 } else {
-                    Toast.makeText(this,
+                    Toast.makeText(
+                        this,
                         t("Kopja origjinale nuk fshihet", "The original copy cannot be deleted"),
-                        Toast.LENGTH_LONG).show()
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
             }
             .setNeutralButton(t("Mbyll", "Close"), null)
@@ -120,16 +138,18 @@ class BackupActivity : Activity() {
             Toast.makeText(this, t("Nuk ka backup", "No backups"), Toast.LENGTH_SHORT).show()
             return
         }
+
         val text = all.joinToString("\n----\n") {
             (if (it.original) "[ORIGINAL] " else "") + it.module + " | " + fmt(it.time) + " | " + it.data
         }
+
         val i = Intent(Intent.ACTION_SEND)
         i.type = "text/plain"
         i.putExtra(Intent.EXTRA_TEXT, text)
         startActivity(Intent.createChooser(i, t("Eksporto backup", "Export backup")))
     }
 
-    @Deprecated("Deprecated in Java")
+    @Suppress("DEPRECATION")
     override fun onBackPressed() {
         if (current != null) {
             current = null
