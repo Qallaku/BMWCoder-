@@ -102,7 +102,9 @@ class MenuActivity : Activity() {
             t("Lexo dhe pastro gabimet", "Read and clear faults"),
             DtcActivity::class.java)
         item(list, "🧩", t("Modulet (ECU)", "Modules (ECU)"),
-            t("Funksionet e moduleve", "Module functions"),
+                   item(list, "📈", t("Të dhëna live", "Live data"),
+            t("Rrotullime, temperatura, tension", "RPM, temperatures, voltage"),
+            LiveActivity::class.java) t("Funksionet e moduleve", "Module functions"),
             ModulesActivity::class.java)
         item(list, "💾", "Backup",
             t("Kopjet dhe historiku sipas modulit", "Copies and history per module"),
