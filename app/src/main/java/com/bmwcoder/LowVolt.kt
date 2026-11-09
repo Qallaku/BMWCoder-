@@ -29,9 +29,9 @@ object LowVolt {
         val u = r.uppercase()
         return u.isBlank() || u.contains("NO DATA") || u.contains("BUS INIT") ||
             u.contains("CAN ERROR") || u.contains("BUFFER FULL") || u.contains("?")
-    }
+ fun ask(cmd: String, tries: Int = 3, timeoutMs: Int = 3500): String {   }
 
-    /**
+    /**fun ask(cmd: String, tries: Int = 3, timeoutMs: Long = 3500): String {
      * Dërgon komandën me përsëritje dhe timeout më të gjatë.
      * Në tension të ulët modulet përgjigjen ngadalë, prandaj 3 provë + pauzë.
      */
