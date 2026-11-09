@@ -1,25 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
-    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
-    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
-    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
-    <application
-        android:label="@string/app_name"
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN"/>
+    <application android:label="@string/app_name"
         android:theme="@android:style/Theme.Material.Light.NoActionBar">
         <activity android:name=".MenuActivity" android:exported="true">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-        <activity android:name=".MainActivity" android:exported="false" />
-        <activity android:name=".ModulesActivity" android:exported="false" />
-        <activity android:name=".BackupActivity" android:exported="false" />
-        <activity android:name=".ModuleDetailActivity" android:exported="false" />
-        <activity android:name=".ScanActivity" android:exported="false" />
-        <activity android:name=".DtcActivity" android:exported="false" />
-        <activity android:name=".LiveActivity" android:exported="false" />
-        <activity android:name=".ReadActivity" android:exported="false" />
+        <activity android:name=".MainActivity"/>
+        <activity android:name=".ModulesActivity"/>
+        <activity android:name=".BackupActivity"/>
+        <activity android:name=".ModuleDetailActivity"/>
+        <activity android:name=".ScanActivity"/>
+        <activity android:name=".DtcActivity"/>
+        <activity android:name=".LiveActivity"/>
+        <activity android:name=".ReadActivity"/>
+        <activity android:name=".CodingActivity" android:exported="true" android:label="BmwCoder Kodimi">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
     </application>
 </manifest>
