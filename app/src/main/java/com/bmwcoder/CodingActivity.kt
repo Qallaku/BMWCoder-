@@ -205,10 +205,47 @@ class CodingActivity : Activity() {
                     } else silent = 0
                 }
                 say("Përfundoi: $found blloqe të lexuara.")
-                if (found > 0) save(addr, name, out.toString())
+                if (found > 0) { compareWithPrevious(addr, out.toString()); save(addr, name, out.toString()) }
             } catch (e: Exception) { say("Gabim: ${e.message}") }
             finally { try { restore() } catch (_: Exception) {}; busy = false; runOnUiThread { bar.progress = 0 } }
         }.start()
+    }
+
+    private fun parseData(d: String): Map<Int, String> {
+        val m = LinkedHashMap<Int, String>()
+        for (p in d.split(';')) {
+            val i = p.indexOf(':')
+            if (i > 0) { val k = p.substring(0, i).toIntOrNull(16); if (k != null) m[k] = p.substring(i + 1) }
+        }
+        return m
+    }
+
+    private fun bin(v: Int) = Integer.toBinaryString(v).padStart(8, '0')
+
+    private fun compareWithPrevious(addr: Int, newData: String) {
+        try {
+            val dir = File(filesDir, "backups")
+            val tag = "_ECU%02X_".format(addr)
+            val prev = dir.listFiles()?.filter { it.name.contains(tag) && it.name.endsWith(".txt") }
+                ?.sortedBy { it.name }?.lastOrNull()
+            if (prev == null) { say("Ky është leximi i parë i këtij moduli: ruhet si ★ Origjinal."); return }
+            val line = prev.readLines().firstOrNull { it.startsWith("data=") } ?: ""
+            val old = parseData(line.substring(5))
+            val cur = parseData(newData)
+            var n = 0
+            for ((k, v) in cur) {
+                val o = old[k] ?: continue
+                if (o == v) continue
+                val len = minOf(o.length, v.length) / 2
+                for (i in 0 until len) {
+                    val x = o.substring(i * 2, i * 2 + 2).toInt(16)
+                    val y = v.substring(i * 2, i * 2 + 2).toInt(16)
+                    if (x != y) { n++; say("NDRYSHIM bllok %04X bajt %d: %02X -> %02X  (%s -> %s)".format(k, i, x, y, bin(x), bin(y))) }
+                }
+                if (o.length != v.length) say("Bllok %04X: ndryshoi gjatësia".format(k))
+            }
+            say(if (n == 0) "Pa ndryshime kundrejt leximit të mëparshëm (${prev.name})." else "Gjithsej $n bajte të ndryshuar kundrejt ${prev.name}.")
+        } catch (e: Exception) { say("Krahasimi dështoi: ${e.message}") }
     }
 
     private fun save(addr: Int, name: String, data: String) {
