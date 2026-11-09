@@ -92,6 +92,22 @@ class ModulesActivity : Activity() {
         head.textSize = 26f
         root.addView(head)
 
+        val real = TextView(this)
+        real.text = if (isEn()) "▶ REAL modules from the car (read-only)" else "▶ MODULET E VËRTETA nga makina (vetëm lexim)"
+        real.textSize = 17f
+        real.setTypeface(null, Typeface.BOLD)
+        real.setTextColor(0xFFFFFFFF.toInt())
+        real.setBackgroundColor(0xFF1C69D4.toInt())
+        real.gravity = Gravity.CENTER
+        real.setPadding(dp(12), dp(16), dp(12), dp(16))
+        real.setOnClickListener { startActivity(Intent(this, CodingActivity::class.java)) }
+        root.addView(real)
+
+        val note = TextView(this)
+        note.text = if (isEn()) "The list below is a DEMO (functions not connected yet)." else "Lista më poshtë është DEMO (funksionet s'janë lidhur ende me makinën)."
+        note.textSize = 13f
+        root.addView(note)
+
         val search = EditText(this)
         search.hint = if (isEn()) "Search..." else "Kërko..."
         root.addView(search)
