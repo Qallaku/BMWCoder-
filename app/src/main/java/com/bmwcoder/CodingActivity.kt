@@ -41,6 +41,7 @@ class CodingActivity : Activity() {
         addrBox = EditText(this).apply { hint = "Adresa HEX e modulit (p.sh. 40)"; setText("40") }
         root.addView(addrBox)
         root.addView(btn("2) Lexo kodimin e modulit") { readCoding() })
+        root.addView(btn("3) Diagnostikë (përgjigje të papërpunuara)") { diag() })
         root.addView(btn("Ndalo") { stop = true })
         bar = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply { max = 100 }
         root.addView(bar)
@@ -71,7 +72,7 @@ class CodingActivity : Activity() {
 
     private fun readDid(addr: Int, did: Int, tries: Int = 2): Pair<ByteArray?, Int?> {
         val a = "%02X".format(addr)
-        val req = "$a 03 22 %02X %02X".format(did shr 8, did and 0xFF)
+        val req = "$a 03 22 %02X %02X 00 00 00".format(did shr 8, did and 0xFF)
         repeat(tries) {
             val raw = CarLink.send(req, 1500)
             val fr = frames(raw)
@@ -84,7 +85,7 @@ class CodingActivity : Activity() {
                 } else if (type == 1) {
                     val total = ((f[0] and 0xF) shl 8) or f[1]
                     val buf = ArrayList<Int>(f.drop(2))
-                    val more = CarLink.send("$a 30 00 00", 2500)
+                    val more = CarLink.send("$a 30 00 0A 00 00 00 00", 3000)
                     for (c in frames(more)) if ((c[0] shr 4) == 2) buf.addAll(c.drop(1))
                     data = buf.take(total)
                 } else return Pair(null, null)
@@ -101,7 +102,7 @@ class CodingActivity : Activity() {
     }
 
     private fun setup() {
-        for (c in listOf("ATE0", "ATL0", "ATH1", "ATCAF0", "ATSP6", "ATST 64", "ATSH 6F1", "ATCM 700", "ATCF 600"))
+        for (c in listOf("ATE0", "ATL0", "ATH1", "ATCAF0", "ATSP6", "ATST 80", "ATSH 6F1", "ATCM 700", "ATCF 600"))
             CarLink.send(c, 1500)
     }
 
@@ -118,7 +119,7 @@ class CodingActivity : Activity() {
                 for (a in 0..0xFF) {
                     if (stop) break
                     runOnUiThread { bar.progress = a * 100 / 255 }
-                    val r = CarLink.send("%02X 02 3E 00".format(a), 500).uppercase()
+                    val r = CarLink.send("%02X 02 3E 00 00 00 00 00".format(a), 500).uppercase()
                     if (r.contains("7E 00") || r.contains(" 7F ")) {
                         n++
                         val nm = EcuNames.name(this, a)
@@ -131,6 +132,44 @@ class CodingActivity : Activity() {
                 say("U gjetën $n module. Zgjidh një dhe shtyp 'Lexo kodimin'.")
             } catch (e: Exception) { say("Gabim: ${e.message}") }
             finally { try { restore() } catch (_: Exception) {}; busy = false; runOnUiThread { bar.progress = 0 } }
+        }.start()
+    }
+
+    private fun raw(r: String) = r.replace('\r', '|').replace('\n', '|')
+
+    private fun diag() {
+        if (busy) return
+        if (!CarLink.isConnected) { Toast.makeText(this, "Lidhu me makinën së pari", Toast.LENGTH_LONG).show(); return }
+        val addr = addrBox.text.toString().trim().toIntOrNull(16)
+        if (addr == null || addr !in 0..255) { Toast.makeText(this, "Adresë e pavlefshme", Toast.LENGTH_SHORT).show(); return }
+        busy = true; log.text = ""; report.setLength(0)
+        val a = "%02X".format(addr)
+        Thread {
+            try {
+                setup()
+                say("DIAG moduli $a · " + raw(CarLink.send("ATRV", 1500)))
+                val tests = listOf(
+                    "ping 3E" to "$a 02 3E 00 00 00 00 00",
+                    "22 F190" to "$a 03 22 F1 90 00 00 00",
+                    "22 F187" to "$a 03 22 F1 87 00 00 00",
+                    "22 3000" to "$a 03 22 30 00 00 00 00",
+                    "22 F100" to "$a 03 22 F1 00 00 00 00",
+                    "10 03 seanca" to "$a 02 10 03 00 00 00 00",
+                    "22 F190 pas seancës" to "$a 03 22 F1 90 00 00 00",
+                    "19 02 FF" to "$a 03 19 02 FF 00 00 00",
+                    "19 01 FF" to "$a 03 19 01 FF 00 00 00",
+                    "22 3000 sërish" to "$a 03 22 30 00 00 00 00"
+                )
+                for ((n, c) in tests) {
+                    val r = raw(CarLink.send(c, 2500))
+                    say("$n -> $r")
+                    if (r.contains(" 10 ")) {
+                        say("   FC -> " + raw(CarLink.send("$a 30 00 0A 00 00 00 00", 3000)))
+                    }
+                }
+                say("ATDP -> " + raw(CarLink.send("ATDP", 1500)))
+            } catch (e: Exception) { say("Gabim: ${e.message}") }
+            finally { try { restore() } catch (_: Exception) {}; busy = false }
         }.start()
     }
 
