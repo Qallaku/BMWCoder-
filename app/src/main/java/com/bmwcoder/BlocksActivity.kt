@@ -63,7 +63,20 @@ class BlocksActivity : Activity() {
         read.isAllCaps = false
         read.setOnClickListener { startActivity(Intent(this, CodingActivity::class.java)) }
         root.addView(read)
+    
+        root.addView(read)
 
+        val fns = Button(this)
+        fns.text = "Funksionet (në shqip)"
+        fns.isAllCaps = false
+        fns.setOnClickListener {
+            val i = Intent(this, FunctionsActivity::class.java)
+            i.putExtra("addr", addr)
+            startActivity(i)
+        }
+        root.addView(fns)
+
+        val note = TextView(this)
         val note = TextView(this)
         note.textSize = 13f
         root.addView(note)
