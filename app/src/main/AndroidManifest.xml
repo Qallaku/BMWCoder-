@@ -20,6 +20,7 @@
         <activity android:name=".DtcActivity"/>
         <activity android:name=".LiveActivity"/>
         <activity android:name=".ReadActivity"/>
+        <activity android:name=".BlocksActivity"/>
         <activity android:name=".CodingActivity" android:exported="true" android:label="BmwCoder Kodimi">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
