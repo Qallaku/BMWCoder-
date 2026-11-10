@@ -14,7 +14,7 @@
         </activity>
         <activity android:name=".MainActivity"/>
         <activity android:name=".ModulesActivity"/>
-        <activity android:name=".BackupActivity"/>
+        <activity android:name=".BackupActivity"/>        <activity android:name=".FunctionsActivity"/>
         <activity android:name=".ModuleDetailActivity"/>
         <activity android:name=".ScanActivity"/>
         <activity android:name=".DtcActivity"/>
