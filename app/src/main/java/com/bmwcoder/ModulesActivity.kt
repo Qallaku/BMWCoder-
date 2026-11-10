@@ -104,7 +104,7 @@ class ModulesActivity : Activity() {
         root.addView(real)
 
         val note = TextView(this)
-        note.text = if (isEn()) "The list below is a DEMO (functions not connected yet)." else "Lista më poshtë është DEMO (funksionet s'janë lidhur ende me makinën)."
+        note.text = if (isEn()) "Front Electronic Module shows REAL data. The others are still DEMO." else "Front Electronic Module tregon të dhëna të VËRTETA. Të tjerat janë ende DEMO."
         note.textSize = 13f
         root.addView(note)
 
@@ -116,9 +116,16 @@ class ModulesActivity : Activity() {
         val adapter = EcuAdapter()
         list.adapter = adapter
         list.setOnItemClickListener { _, _, pos, _ ->
-            val i = Intent(this, ModuleDetailActivity::class.java)
-            i.putExtra("name", shown[pos].name)
-            startActivity(i)
+            val nm = shown[pos].name
+            if (nm == "Front Electronic Module") {
+                val i = Intent(this, BlocksActivity::class.java)
+                i.putExtra("addr", 0x40)
+                startActivity(i)
+            } else {
+                val i = Intent(this, ModuleDetailActivity::class.java)
+                i.putExtra("name", nm)
+                startActivity(i)
+            }
         }
         root.addView(list, LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
