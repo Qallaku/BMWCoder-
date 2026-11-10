@@ -64,8 +64,8 @@ class DtcActivity : Activity() {
             Toast.makeText(this, t("U kopjua", "Copied"), Toast.LENGTH_SHORT).show()
         }
         setContentView(root)
-        log(t("Lidhu te Lidhja me makinën, ndiz motorin, pastaj shtyp Lexo. Pa lidhje punon në demo.",
-            "Connect first, start the engine, then tap Read. Without a connection it runs in demo mode."))
+        log(t("Lidhu te Lidhja me makinën, ndiz kontaktin, pastaj shtyp Lexo. Pa lidhje punon në demo.",
+            "Connect first, turn the ignition on, then tap Read. Without a connection it runs in demo mode."))
     }
 
     private fun log(msg: String) {
@@ -95,7 +95,7 @@ class DtcActivity : Activity() {
         CarLink.send("ATSP6", 3000)
         CarLink.send("ATH1", 2000)
         CarLink.send("ATCAF0", 2000)
-        CarLink.send("ATST 30", 2000)
+        CarLink.send("ATST 80", 2000)
         CarLink.send("ATSH 6F1", 2000)
         CarLink.send("ATCM 700", 2000)
         CarLink.send("ATCF 600", 2000)
@@ -118,48 +118,61 @@ class DtcActivity : Activity() {
 
     private fun fromAddr(f: List<String>, addr: String) = f[0].substring(1) == addr
 
-    private fun uds(addr: String, req: String): List<Int>? {
-        val toks = req.trim().split(" ")
-        val n = toks.size
-        val sb = StringBuilder()
-        sb.append(addr).append(' ').append(hex(n)).append(' ').append(req.trim())
-        for (i in 0 until (6 - n)) sb.append(" 00")
-        val r = CarLink.send(sb.toString(), 1200)
-        val fr = frames(r).filter { fromAddr(it, addr) }
-        if (fr.isEmpty()) return null
-        val first = fr[0]
-        val pci = first[2].toInt(16)
-        val res = ArrayList<Int>()
-        if ((pci and 0xF0) == 0x00) {
-            val len = pci and 0x0F
-            for (i in 0 until len) {
-                if (3 + i < first.size) res.add(first[3 + i].toInt(16))
-            }
-        } else if ((pci and 0xF0) == 0x10 && first.size >= 5) {
-            val total = ((pci and 0x0F) shl 8) or first[3].toInt(16)
-            for (i in 4 until first.size) res.add(first[i].toInt(16))
-            val fc = CarLink.send(addr + " 30 00 00 00 00 00 00", 2000)
-            val more = fr.drop(1) + frames(fc).filter { fromAddr(it, addr) }
-            for (f in more) {
-                val p = f[2].toInt(16)
-                if ((p and 0xF0) == 0x20) {
-                    for (i in 3 until f.size) res.add(f[i].toInt(16))
+    private class Msg(val data: List<Int>, val total: Int)
+
+    private fun assemble(fr: List<List<String>>): Msg? {
+        var pending: Msg? = null
+        var i = 0
+        while (i < fr.size) {
+            val f = fr[i]
+            val pci = f[2].toInt(16)
+            val type = pci and 0xF0
+            if (type == 0x00) {
+                val len = pci and 0x0F
+                val d = ArrayList<Int>()
+                for (k in 0 until len) if (3 + k < f.size) d.add(f[3 + k].toInt(16))
+                if (d.size >= 3 && d[0] == 0x7F && d[2] == 0x78) {
+                    pending = Msg(d, d.size)
+                    i++
+                    continue
                 }
+                return Msg(d, len)
+            } else if (type == 0x10 && f.size >= 5) {
+                val total = ((pci and 0x0F) shl 8) or f[3].toInt(16)
+                val d = ArrayList<Int>()
+                for (k in 4 until f.size) d.add(f[k].toInt(16))
+                for (j in i + 1 until fr.size) {
+                    val g = fr[j]
+                    if ((g[2].toInt(16) and 0xF0) == 0x20) {
+                        for (k in 3 until g.size) d.add(g[k].toInt(16))
+                    }
+                }
+                while (d.size > total) d.removeAt(d.size - 1)
+                return Msg(d, total)
             }
-            while (res.size > total) res.removeAt(res.size - 1)
+            i++
         }
-        return res
+        return pending
     }
 
-    private fun udsRetry(addr: String, req: String): List<Int>? {
-        var p = uds(addr, req)
+    // Lexon gabimet (19 02 08). Pret përgjigjen e vonuar (7F 19 78) dhe merr kornizat e vazhdimit.
+    private fun dtcRead(addr: String): List<Int>? {
+        val r = CarLink.send(addr + " 03 19 02 08 00 00 00", 2500)
+        var fr = frames(r).filter { fromAddr(it, addr) }
+        var m = assemble(fr)
         var tries = 0
-        while (p != null && p.size >= 3 && p[0] == 0x7F && p[2] == 0x78 && tries < 3) {
-            Thread.sleep(400)
-            p = uds(addr, req)
+        while (tries < 5) {
+            val isPending = m != null && m.data.size >= 3 && m.data[0] == 0x7F && m.data[2] == 0x78
+            val incomplete = m != null && !isPending && m.data.size < m.total
+            if (m != null && !isPending && !incomplete) return m.data
+            if (m == null && tries == 0) return null
+            Thread.sleep(1000)
+            val r2 = CarLink.send(addr + " 30 00 0A 00 00 00 00", 4000)
+            fr = fr + frames(r2).filter { fromAddr(it, addr) }
+            m = assemble(fr)
             tries++
         }
-        return p
+        return if (m != null && m.data.size >= 3 && m.data[0] == 0x59) m.data else null
     }
 
     private fun parseFaults(p: List<Int>): List<String> {
@@ -192,7 +205,7 @@ class DtcActivity : Activity() {
         busy = true
         stopFlag = false
         logBuf.setLength(0)
-        log(t("Po skanoj, rreth 1-2 minuta ...", "Scanning, about 1-2 minutes ..."))
+        log(t("Po skanoj, rreth 2-5 minuta ...", "Scanning, about 2-5 minutes ..."))
         Thread {
             try {
                 log(t("Tensioni: ", "Voltage: ") + clean(CarLink.send("ATRV", 2000)))
@@ -212,7 +225,7 @@ class DtcActivity : Activity() {
                 var silent = 0
                 for (addr in found) {
                     if (stopFlag) break
-                    val p = udsRetry(addr, "19 02 FF")
+                    val p = dtcRead(addr)
                     if (p == null) {
                         silent++
                         log("0x" + addr + ": " + t("pa përgjigje", "no reply"))
@@ -226,7 +239,7 @@ class DtcActivity : Activity() {
                             log("0x" + addr + ": OK, 0 " + t("gabime", "faults"))
                         } else {
                             result[addr] = d
-                            log("0x" + addr + ": " + d.size + " " + t("gabime", "faults") + "  " + d.joinToString(", "))
+                            log("0x" + addr + ": " + d.size + " " + t("gabime", "faults") + "  " + d.take(6).joinToString(", ") + (if (d.size > 6) " ..." else ""))
                         }
                     }
                 }
