@@ -6,6 +6,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.graphics.Color
 import android.os.Bundle
+import android.view.WindowManager
 import android.widget.*
 import java.io.File
 import java.text.SimpleDateFormat
@@ -42,6 +43,7 @@ class CodingActivity : Activity() {
         root.addView(addrBox)
         root.addView(btn("2) Lexo kodimin e modulit") { readCoding() })
         root.addView(btn("3) Diagnostikë (përgjigje të papërpunuara)") { diag() })
+        root.addView(btn("4) Lexo TË GJITHA modulet (ruaj Origjinal)") { readAll() })
         root.addView(btn("Ndalo") { stop = true })
         bar = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply { max = 100 }
         root.addView(bar)
@@ -132,6 +134,63 @@ class CodingActivity : Activity() {
                 say("U gjetën $n module. Zgjidh një dhe shtyp 'Lexo kodimin'.")
             } catch (e: Exception) { say("Gabim: ${e.message}") }
             finally { try { restore() } catch (_: Exception) {}; busy = false; runOnUiThread { bar.progress = 0 } }
+        }.start()
+    }
+
+    private fun readAll() {
+        if (busy) return
+        if (!CarLink.isConnected) { Toast.makeText(this, "Lidhu me makinën së pari", Toast.LENGTH_LONG).show(); return }
+        busy = true; stop = false; log.text = ""; report.setLength(0)
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        Thread {
+            try {
+                setup()
+                say(LowVolt.status())
+                val mods = ArrayList<Int>()
+                for (a in 0..0xFF) {
+                    if (stop) break
+                    runOnUiThread { bar.progress = a * 100 / 255 }
+                    val r = CarLink.send("%02X 02 3E 00 00 00 00 00".format(a), 500).uppercase()
+                    if (r.contains("7E 00") || r.contains(" 7F ")) mods.add(a)
+                }
+                say("U gjetën ${mods.size} module. Po i lexoj një nga një (airbag-u kapërcehet).")
+                var okCount = 0
+                for ((mi, a) in mods.withIndex()) {
+                    if (stop) { say("Ndalur."); break }
+                    if (a == 0x72) { say("%02X ACSM (airbag): kapërcyer".format(a)); continue }
+                    val name = EcuNames.name(this, a)
+                    val dids = ArrayList<Int>()
+                    dids.addAll(listOf(0xF190, 0xF187, 0xF189, 0xF18A, 0xF18C, 0xF191, 0xF193, 0xF194, 0xF150))
+                    dids.addAll(0x3000..0x30FF)
+                    val out = StringBuilder()
+                    var found = 0
+                    var silent = 0
+                    for ((i, d) in dids.withIndex()) {
+                        if (stop) break
+                        runOnUiThread { bar.progress = (mi * 100 + i * 100 / dids.size) / maxOf(1, mods.size) }
+                        val (data, nrc) = readDid(a, d, 1)
+                        if (data != null) {
+                            found++; silent = 0
+                            out.append("%04X:%s;".format(d, data.joinToString("") { "%02X".format(it) }))
+                        } else if (nrc == null) {
+                            silent++
+                            if (silent >= 8 && found == 0) break
+                            if (silent >= 30) break
+                        } else silent = 0
+                    }
+                    if (found > 0) {
+                        okCount++
+                        say("%02X %s: %d blloqe".format(a, name, found))
+                        save(a, name, out.toString())
+                    } else say("%02X %s: nuk lexohet".format(a, name))
+                }
+                say("PËRFUNDOI. U ruajtën $okCount module. Shih te Backup.")
+            } catch (e: Exception) { say("Gabim: ${e.message}") }
+            finally {
+                try { restore() } catch (_: Exception) {}
+                busy = false
+                runOnUiThread { bar.progress = 0; window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) }
+            }
         }.start()
     }
 
